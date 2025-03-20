@@ -57,15 +57,12 @@ class AnalysisApp(QWidget):
         for sheet_name in xls.sheet_names:
             df = pd.read_excel(xls, sheet_name=sheet_name)
             
-            # Ensure columns exist
-            if {'Name', 'Qty of Markers'}.issubset(df.columns):
-                # Set 'Type' as index and store 'Qty of Markers'
-                summary_data[sheet_name] = df.set_index('Name')['Qty of Markers']
-            elif {'Type', 'Count'}.issubset(df.columns):
-                # Set 'Type' as index and store 'Count'
-                summary_data[sheet_name] = df.set_index('Type')['Count']
+            # Ensure required columns exist
+            if {'Type', 'Name', 'Qty of Markers'}.issubset(df.columns):
+                # Set 'Type' and 'Name' as a multi-index and store 'Qty of Markers'
+                summary_data[sheet_name] = df.set_index(['Type', 'Name'])['Qty of Markers']
             else:
-                QMessageBox.warning(self, "Data Error", f"Sheet '{sheet_name}' does not contain the required columns.")
+                QMessageBox.warning(self, "Data Error", f"Sheet '{sheet_name}' does not contain the required columns ('Type', 'Name', 'Qty of Markers').")
 
         # Combine all sheets into a single DataFrame
         summary_df = pd.DataFrame(summary_data).fillna(0).astype(int)
@@ -73,12 +70,9 @@ class AnalysisApp(QWidget):
         # Reset index so 'Type' becomes columns
         summary_df = summary_df.T.reset_index()
 
-        # Rename columns
-        summary_df.rename(columns={'index': 'Tab Name'}, inplace=True)
-
         # Save to a new Excel file
         output_file = file_path.replace(".xlsx", "_Summary_Output.xlsx")
-        summary_df.to_excel(output_file, index=False)
+        summary_df.to_excel(output_file, index=True)
 
         QMessageBox.information(self, "Success", f"'Marker Count Summary' data saved to:\n{output_file}")
         self.show()  # Return to the main screen
