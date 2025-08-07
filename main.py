@@ -1,19 +1,45 @@
+
 import sys
 import pandas as pd
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLabel, QFileDialog, QMessageBox
+from PyQt6.QtCore import Qt
 
 class AnalysisApp(QWidget):
+
     def __init__(self):
         super().__init__()
 
         # Set up the UI
-        self.setWindowTitle("Select Analysis Type")
-        self.setGeometry(0, 0, 300, 100)
-        
+        self.setWindowTitle("NLExplorer Excel Joiner")
+        self.setMinimumSize(420, 260)
+        # Use targeted styles only (no global QWidget background)
+        self.setStyleSheet(
+            "QLabel#Title { font-size: 20px; font-weight: bold; color: #2196f3; } "
+            "QLabel#Subtitle { color: #888888; font-size: 13px; } "
+            "QPushButton { font-size: 15px; padding: 8px; } "
+            "QPushButton#Help { background: #e1e1e1; color: #333; font-size: 13px; }"
+        )
 
         layout = QVBoxLayout()
+        layout.setSpacing(16)
+        layout.setContentsMargins(32, 24, 32, 24)
 
+        # Title
+        self.title = QLabel("NLExplorer Excel Joiner")
+        self.title.setObjectName("Title")
+        self.title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.title)
+
+        # Subtitle
+        self.subtitle = QLabel("Reformat and summarize Neurolucida Explorer Excel output files.")
+        self.subtitle.setObjectName("Subtitle")
+        self.subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.subtitle)
+
+        # Main label
         self.label = QLabel("Choose an analysis type:")
+        self.label.setToolTip("Select the type of summary you want to generate from your Excel file.")
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.label)
 
         # Define available analysis functions
@@ -23,14 +49,52 @@ class AnalysisApp(QWidget):
             # Add more analyses here
         }
 
+        # Tooltips for each analysis
+        tooltips = {
+            "Marker Count Summary": (
+                "<b>Marker Count Summary</b><br>"
+                "Summarizes marker counts by type and name across all sheets.<br>"
+                "<b>Input requirements:</b> Each sheet must have columns: <i>Type, Name, Qty of Markers</i>."
+            ),
+            "Dendrite Trees Summary": (
+                "<b>Dendrite Trees Summary</b><br>"
+                "Summarizes dendrite tree metrics (length, surface, volume) per tree and per sheet.<br>"
+                "<b>Input requirements:</b> Each sheet must have columns: <i>Tree, Length Total(µm), Surface Total(µm²), Volume Total(µm³)</i>."
+            )
+        }
+
         # Dynamically create buttons for each analysis type
         for analysis_name in self.analysis_methods:
             button = QPushButton(analysis_name)
+            button.setToolTip(tooltips.get(analysis_name, "Run this analysis."))
             button.clicked.connect(lambda checked, name=analysis_name: self.select_file(name))
             layout.addWidget(button)
-        
+
+        # Add Help/Info button
+        help_btn = QPushButton("Help / Info")
+        help_btn.setObjectName("Help")
+        help_btn.setToolTip("Show information about input requirements and usage.")
+        help_btn.clicked.connect(self.show_help_dialog)
+        layout.addWidget(help_btn)
+
         self.center_ui()
         self.setLayout(layout)
+
+    def show_help_dialog(self):
+        msg = (
+            "<b>NLExplorer Excel Joiner</b><br><br>"
+            "<b>How to use:</b><br>"
+            "1. Click an analysis type.<br>"
+            "2. Select your Excel file (.xlsx) when prompted.<br>"
+            "3. The tool will process the file and save a summary output in the same folder.<br><br>"
+            "<b>Input requirements:</b><br>"
+            "<u>Marker Count Summary</u>:<br>"
+            "&nbsp;&nbsp;- Each sheet must have columns: <i>Type, Name, Qty of Markers</i>.<br>"
+            "<u>Dendrite Trees Summary</u>:<br>"
+            "&nbsp;&nbsp;- Each sheet must have columns: <i>Tree, Length Total(µm), Surface Total(µm²), Volume Total(µm³)</i>.<br><br>"
+            "If required columns are missing, the tool will warn you and skip those sheets."
+        )
+        QMessageBox.information(self, "Help / Info", msg)
 
     def center_ui(self):
         """Center the window on the screen"""
